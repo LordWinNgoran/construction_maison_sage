@@ -314,6 +314,8 @@ HTML_TEMPLATE = r'''<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Maquette 3D — deux logements 3 pièces</title>
+<script src="../auth.js"></script>
+<script>window.MaquetteAuth.requireAuth('../index.html');</script>
 <style>
 :root{--ink:#202326;--muted:#687078;--paper:#f3f2ee;--panel:#fff;--line:#d7d8d6;--accent:#b8762e}
 *{box-sizing:border-box}html,body{margin:0;height:100%;font-family:Inter,Arial,sans-serif;color:var(--ink);background:var(--paper)}
@@ -352,6 +354,7 @@ h1{font-size:19px;line-height:1.2;margin:0 0 6px}.sub{font-size:12px;color:var(-
     <label class="check"><input id="cutToggle" type="checkbox" checked> Coupe claire des murs</label>
   </div>
   <div class="grid"><button id="resetBtn">Réinitialiser</button><button id="exportBtn">Exporter PNG</button></div>
+  <button id="logoutBtn" style="margin-top:7px">Se déconnecter</button>
   <div class="note"><b>Navigation 360°</b><br>Glisser pour tourner. Molette pour zoomer. Les ouvertures et la toiture sont schématiques, car le PDF ne comporte ni façades ni coupes.</div>
 </aside>
 <main class="stage">
@@ -411,6 +414,7 @@ document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.data
 roofToggle.onchange=()=>{state.roof=roofToggle.checked;render()};labelToggle.onchange=()=>{state.labels=labelToggle.checked;render()};cutToggle.onchange=()=>{state.cut=cutToggle.checked;render()};
 document.getElementById('resetBtn').onclick=()=>{state.space='';select.value='';state.roof=false;roofToggle.checked=false;state.labels=true;labelToggle.checked=true;setView('axo')};
 document.getElementById('exportBtn').onclick=()=>{render();const a=document.createElement('a');a.download=(state.space||'maquette_globale')+'.png';a.href=canvas.toDataURL('image/png');a.click()};
+document.getElementById('logoutBtn').onclick=()=>window.MaquetteAuth.logout('../index.html');
 function cycle(dir){let i=MODEL.spaces.findIndex(s=>s.id===state.space);i=(i+dir+MODEL.spaces.length)%MODEL.spaces.length;focusSpace(MODEL.spaces[i].id)}document.getElementById('prevSpace').onclick=()=>cycle(-1);document.getElementById('nextSpace').onclick=()=>cycle(1);
 let drag=false,last=[0,0];canvas.addEventListener('pointerdown',e=>{drag=true;last=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointerup',()=>drag=false);canvas.addEventListener('pointermove',e=>{if(!drag)return;state.az+=(e.clientX-last[0])*.008;state.el=Math.max(.08,Math.min(1.48,state.el-(e.clientY-last[1])*.006));last=[e.clientX,e.clientY];render()});canvas.addEventListener('wheel',e=>{e.preventDefault();state.dist=Math.max(4,Math.min(55,state.dist*Math.exp(e.deltaY*.001)));render()},{passive:false});
 function init(){if(qs.get('clean')==='1')document.body.classList.add('clean');const view=qs.get('view')||'axo';state.roof=qs.get('roof')==='1';state.labels=qs.get('labels')!=='0';state.cut=qs.get('cut')!=='0';roofToggle.checked=state.roof;labelToggle.checked=state.labels;cutToggle.checked=state.cut;const sp=qs.get('space');if(sp)focusSpace(sp);else setView(view);if(qs.has('az'))state.az=Number(qs.get('az'))*Math.PI/180;if(qs.has('el'))state.el=Number(qs.get('el'))*Math.PI/180;if(qs.has('dist'))state.dist=Number(qs.get('dist'));render()}
@@ -452,9 +456,9 @@ def write_gallery():
         f'<figure><a href="vues_espaces/{s["id"]}.png"><img src="vues_espaces/{s["id"]}.png" alt="{s["label"]}"></a><figcaption>{s["label"]}</figcaption></figure>'
         for s in spaces
     )
-    html = f'''<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Galerie — Maquette 3D</title><style>
+    html = f'''<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Galerie — Maquette 3D</title><script src="../auth.js"></script><script>window.MaquetteAuth.requireAuth('../index.html');</script><style>
 body{{margin:0;font:15px Arial,sans-serif;background:#efefec;color:#222}}header{{padding:28px 5vw;background:#fff;border-bottom:1px solid #ccc;position:sticky;top:0;z-index:2}}h1{{margin:0 0 6px;font-size:25px}}p{{margin:0;color:#666}}main{{padding:24px 5vw 50px}}h2{{margin-top:30px}}.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}}figure{{margin:0;background:white;border:1px solid #d5d5d1;border-radius:9px;overflow:hidden}}img{{display:block;width:100%;aspect-ratio:3/2;object-fit:cover}}figcaption{{padding:10px 12px;font-size:13px}}.open{{display:inline-block;margin-top:12px;padding:9px 13px;border-radius:6px;background:#333;color:#fff;text-decoration:none}}</style></head><body>
-<header><h1>Maquette 3D — deux logements</h1><p>Modèle architectural neutre, sans mobilier ni décoration.</p><a class="open" href="maquette_3d_interactive.html">Ouvrir la vue interactive 360°</a></header><main>
+<header><h1>Maquette 3D — deux logements</h1><p>Modèle architectural neutre, sans mobilier ni décoration.</p><a class="open" href="maquette_3d_interactive.html">Ouvrir la vue interactive 360°</a> <a class="open" href="#" onclick="window.MaquetteAuth.logout('../index.html');return false">Se déconnecter</a></header><main>
 <h2>Vues générales et quatre côtés</h2><div class="grid">{overview}</div>
 <h2>Tour complet 360°</h2><div class="grid">{tour}</div>
 <h2>Vues de chaque espace</h2><div class="grid">{room_figures}</div>

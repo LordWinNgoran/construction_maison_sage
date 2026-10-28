@@ -3,23 +3,155 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="0; url=maquette_3d/galerie.html">
-  <title>Maquette 3D — Maison sage-femme</title>
-  <link rel="canonical" href="maquette_3d/galerie.html">
+  <title>Connexion — Maquette 3D</title>
+  <script src="auth.js"></script>
   <style>
+    :root {
+      color-scheme: light;
+      --ink: #202326;
+      --muted: #697078;
+      --paper: #ecece8;
+      --card: #ffffff;
+      --line: #d7d8d6;
+      --accent: #9a6128;
+      --accent-dark: #754719;
+      --danger: #a13636;
+    }
+    * { box-sizing: border-box; }
     body {
       display: grid;
       min-height: 100vh;
       margin: 0;
       place-items: center;
-      background: #efefec;
-      color: #222;
-      font: 16px/1.5 Arial, sans-serif;
+      padding: 24px;
+      background:
+        linear-gradient(rgba(255,255,255,.58), rgba(255,255,255,.58)),
+        repeating-linear-gradient(0deg, transparent 0 39px, rgba(68,73,76,.06) 39px 40px),
+        repeating-linear-gradient(90deg, transparent 0 39px, rgba(68,73,76,.06) 39px 40px),
+        var(--paper);
+      color: var(--ink);
+      font: 15px/1.5 Arial, sans-serif;
     }
-    a { color: #8a531e; }
+    .card {
+      width: min(440px, 100%);
+      padding: 34px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--card);
+      box-shadow: 0 24px 70px rgba(40,44,47,.13);
+    }
+    .mark {
+      display: grid;
+      width: 58px;
+      height: 58px;
+      margin-bottom: 22px;
+      place-items: center;
+      border-radius: 12px;
+      background: #292d30;
+      color: white;
+      font-size: 27px;
+    }
+    h1 { margin: 0 0 7px; font-size: 27px; line-height: 1.2; }
+    .intro { margin: 0 0 25px; color: var(--muted); }
+    label { display: block; margin-bottom: 7px; font-size: 13px; font-weight: 700; }
+    .field { position: relative; }
+    input {
+      width: 100%;
+      height: 48px;
+      padding: 0 52px 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      outline: none;
+      color: var(--ink);
+      background: #fbfbfa;
+      font: inherit;
+      letter-spacing: .04em;
+    }
+    input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(154,97,40,.13); }
+    .reveal {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 44px;
+      height: 38px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .submit {
+      width: 100%;
+      height: 48px;
+      margin-top: 13px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: white;
+      font: 700 14px Arial, sans-serif;
+      cursor: pointer;
+    }
+    .submit:hover { background: var(--accent-dark); }
+    .submit:disabled { cursor: wait; opacity: .65; }
+    .message { min-height: 22px; margin: 10px 0 0; color: var(--danger); font-size: 13px; }
+    .note { margin: 18px 0 0; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
   </style>
 </head>
 <body>
-  <p>Ouverture de la <a href="maquette_3d/galerie.html">galerie de la maquette 3D</a>…</p>
+  <main class="card">
+    <div class="mark" aria-hidden="true">⌂</div>
+    <h1>Accès à la maquette 3D</h1>
+    <p class="intro">Saisissez le code d'accès pour ouvrir la galerie et la visite interactive.</p>
+
+    <form id="loginForm">
+      <label for="accessCode">Code d'accès</label>
+      <div class="field">
+        <input id="accessCode" name="accessCode" type="password" autocomplete="current-password" required autofocus>
+        <button class="reveal" id="revealButton" type="button" aria-label="Afficher le code">Voir</button>
+      </div>
+      <button class="submit" id="submitButton" type="submit">Ouvrir la maquette</button>
+      <p class="message" id="message" role="alert" aria-live="polite"></p>
+    </form>
+
+    <p class="note">La session reste ouverte pendant 12 heures sur cet appareil.</p>
+  </main>
+
+  <script>
+    const destination = 'maquette_3d/galerie.html';
+    const form = document.getElementById('loginForm');
+    const input = document.getElementById('accessCode');
+    const message = document.getElementById('message');
+    const submit = document.getElementById('submitButton');
+    const reveal = document.getElementById('revealButton');
+
+    if (window.MaquetteAuth.isAuthorized()) {
+      window.location.replace(destination);
+    }
+
+    reveal.addEventListener('click', () => {
+      const visible = input.type === 'text';
+      input.type = visible ? 'password' : 'text';
+      reveal.textContent = visible ? 'Voir' : 'Cacher';
+      reveal.setAttribute('aria-label', visible ? 'Afficher le code' : 'Cacher le code');
+      input.focus();
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      message.textContent = '';
+      submit.disabled = true;
+
+      const accepted = await window.MaquetteAuth.authorize(input.value);
+      if (accepted) {
+        window.location.replace(destination);
+        return;
+      }
+
+      message.textContent = 'Code incorrect. Vérifiez puis réessayez.';
+      input.select();
+      submit.disabled = false;
+    });
+  </script>
 </body>
 </html>
